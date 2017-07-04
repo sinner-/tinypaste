@@ -9,26 +9,20 @@ import (
     "crypto/sha1"
     "time"
     "regexp"
-    "errors"
 )
 
 var validPaste = regexp.MustCompile("[A-Z0-9]{40}")
 
-func getFile(url string) (string, error) {
+func getFile(url string) string {
     file := url[1:]
-    if validPaste.MatchString(file) || file == "" || file == "index.html" {
-        return file, nil
+    if !validPaste.MatchString(file) {
+        return "index.html"
     }
-    return "", errors.New("Paste not found.")
+    return fmt.Sprintf("p/%s", file)
 }
 
 func staticHandler(w http.ResponseWriter, r *http.Request) {
-    file, err := getFile(r.URL.Path)
-    if err != nil {
-        log.Print(err.Error())
-        http.Error(w, err.Error(), http.StatusNotFound)
-        return
-    }
+    file := getFile(r.URL.Path)
     http.ServeFile(w, r, fmt.Sprintf("%s", file))
 }
 
@@ -39,10 +33,11 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
     io.WriteString(hasher, fmt.Sprintf("%s%s", time.Now(), paste))
     hash := fmt.Sprintf("%X", hasher.Sum(nil))
 
-    f, err := os.Create(fmt.Sprintf("%s", hash))
+    f, err := os.Create(fmt.Sprintf("p/%s", hash))
     if err != nil {
         log.Print(err.Error())
         http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
     }
     defer f.Close()
 
@@ -50,6 +45,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         log.Print(err.Error())
         http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
     }
     f.Sync()
 
