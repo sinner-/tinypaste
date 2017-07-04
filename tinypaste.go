@@ -11,6 +11,7 @@ import (
     "regexp"
 )
 
+var pasteDir = "pastes"
 var validPaste = regexp.MustCompile("[A-Z0-9]{40}")
 
 func getFile(url string) string {
@@ -18,7 +19,7 @@ func getFile(url string) string {
     if !validPaste.MatchString(file) {
         return "index.html"
     }
-    return fmt.Sprintf("p/%s", file)
+    return fmt.Sprintf("%s/%s", pasteDir, file)
 }
 
 func staticHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +34,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
     io.WriteString(hasher, fmt.Sprintf("%s%s", time.Now(), paste))
     hash := fmt.Sprintf("%X", hasher.Sum(nil))
 
-    f, err := os.Create(fmt.Sprintf("p/%s", hash))
+    f, err := os.Create(fmt.Sprintf("%s/%s", pasteDir, hash))
     if err != nil {
         log.Print(err.Error())
         http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -53,6 +54,11 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+    if _, err := os.Stat(pasteDir); err != nil {
+        fmt.Println(fmt.Sprintf("Paste directory '%s' is not accessible or doesn't exist.", pasteDir))
+        return
+    }
+
     http.HandleFunc("/", staticHandler)
     http.HandleFunc("/save", saveHandler)
     http.ListenAndServe(":8080", nil)
