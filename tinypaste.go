@@ -55,7 +55,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     if _, err := os.Stat(pasteDir); err != nil {
-        fmt.Println(fmt.Sprintf("Paste directory '%s' is not accessible or doesn't exist.", pasteDir))
+        fmt.Printf("Paste directory '%s' is not accessible or doesn't exist.\n", pasteDir)
         return
     }
 
